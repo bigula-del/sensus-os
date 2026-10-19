@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireStaff, initialsOf } from "@/lib/auth";
 import { signOut } from "@/app/login/actions";
 import { Nav } from "./nav";
@@ -16,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="avatar">{profile.initials || initialsOf(profile.full_name) || "?"}</div>
           <div style={{ minWidth: 0 }}>
             <div>{profile.full_name}</div>
-            <div style={{ color: "#8E8D82", fontSize: 12 }}>{ROLE_LABEL[profile.role]}</div>
+            <div style={{ color: "#8E8D82", fontSize: 12 }}>{ROLE_LABEL[profile.role]} · <Link href="/set-password" style={{ color: "#8E8D82" }}>Change password</Link></div>
           </div>
           <form action={signOut} style={{ marginLeft: "auto" }}>
             <button className="btn sm ghost" style={{ color: "#D9D8CF" }}>Sign out</button>

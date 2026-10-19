@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { requireAdmin, initialsOf } from "@/lib/auth";
 import { setRole } from "./actions";
-import { InviteForm } from "./invite-form";
+import { headers } from "next/headers";
+import { InviteForm, ResetPasswordButton } from "./invite-form";
 
 export const metadata: Metadata = { title: "Team & access" };
 
@@ -15,6 +16,8 @@ const WHAT: Record<string, string> = {
 export default async function TeamPage() {
   const { sb, user } = await requireAdmin();
   const { data: people } = await sb.from("profiles").select("id, full_name, role, active").neq("role", "client").order("created_at");
+  const h = await headers();
+  const siteUrl = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
   return (
     <>
       <div className="head"><div><div className="chips"><span className="chip bad">Admin only</span></div><h1 style={{ marginTop: 8 }}>Team & access</h1>
@@ -23,7 +26,8 @@ export default async function TeamPage() {
         <section className="panel">
           <header><h3>Team</h3></header>
           {(people ?? []).map((p) => (
-            <form key={p.id} action={setRole} className="alert" style={{ alignItems: "center", flexWrap: "wrap" }}>
+            <div key={p.id} className="alert" style={{ alignItems: "center", flexWrap: "wrap" }}>
+            <form action={setRole} style={{ display: "contents" }}>
               <input type="hidden" name="id" value={p.id} />
               <span className="avatar sm alt">{initialsOf(p.full_name)}</span>
               <div style={{ flex: 1, minWidth: 140 }}><b>{p.full_name}</b>{p.id === user.id && <span className="note"> (you)</span>}<div className="note">{WHAT[p.role]}</div></div>
@@ -35,9 +39,11 @@ export default async function TeamPage() {
               </select>
               {p.id !== user.id && <button className="btn sm">Save</button>}
             </form>
+            {p.id !== user.id && <ResetPasswordButton id={p.id} name={p.full_name} />}
+            </div>
           ))}
         </section>
-        <InviteForm />
+        <InviteForm siteUrl={siteUrl} />
       </div>
     </>
   );

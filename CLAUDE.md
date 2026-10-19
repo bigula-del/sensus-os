@@ -43,6 +43,6 @@ psql -h <socket dir> -p <port> -U postgres -d <fresh db> -f supabase/tests/local
 Every migration change must keep `rls_test.sql` passing; add a test for every new rule.
 
 ## Build status
-Done: schema + security rules, login/invite/password reset, role-based shell, Today, Pipeline (create, view, move), Suppliers (list, add),
+Done: schema + security rules, login, team accounts created by the admin with a temporary password (no SMTP yet), change password, role-based shell, Today, Pipeline (create, view, move), Suppliers (list, add),
 People (admin, read-only), Team & access (invite, roles, block), public client proposal page.
 Next: proposal builder (multi-currency, FOC, single supplement, internal columns), then projects + expenses (AI receipt reading), calendar.

@@ -6,10 +6,11 @@
 3. Apply the database: SQL Editor → paste `supabase/migrations/20261019000001_foundation.sql` → Run.
 4. Authentication → Sign In / Providers: keep Email on; turn **off** "Allow new users to sign up" (people join by invitation only).
 5. Authentication → URL Configuration: Site URL = the Vercel address (later `https://os.sensustravel.com`); add it to Redirect URLs as `https://…/auth/confirm`.
-6. Authentication → Emails → Templates, change the links to:
-   - Invite user: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/set-password`
-   - Reset password: `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/set-password`
-7. Create the first user (Matheus): Authentication → Users → Add user → Send invitation. The first account becomes Admin automatically.
+6. Create the first user (Matheus): Authentication → Users → Add user → **Create new user**, with email, password and
+   "Auto Confirm User" ticked. The first account becomes Admin automatically.
+7. Team members are added from Sensus OS → Team & access, which creates the account and shows a temporary password.
+   (Email templates can only be edited after connecting a custom SMTP server, e.g. Microsoft 365; then set the invite and
+   recovery links to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=<invite|recovery>&next=/set-password`.)
 
 ## 2. Vercel (hosting)
 1. Sign up at vercel.com with **Continue with GitHub**.

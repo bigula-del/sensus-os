@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { setPassword } from "./actions";
 
@@ -12,6 +13,7 @@ export function SetPasswordForm({ email }: { email: string }) {
         <img src="/brand/lockup-black.png" alt="sensus" />
       </div>
       <h2>Choose your password</h2>
+      <Link href="/" className="note">← Back to Sensus OS</Link>
       <p className="note" style={{ margin: 0 }}>For {email}. Use at least 10 characters.</p>
       {state?.error && <p className="err" role="alert">{state.error}</p>}
       <input type="email" name="username" autoComplete="username" defaultValue={email} hidden readOnly />
