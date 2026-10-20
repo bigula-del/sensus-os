@@ -5,21 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { CURRENCIES, DEFAULT_FX, lineSellQuote, round2, type Basis, type Fx, type LineInput } from "@/lib/proposals";
-
-/** Today's rates (1 EUR = x) from the European Central Bank, with fallbacks for currencies it does not publish. */
-async function liveFx(): Promise<Fx> {
-  const fx: Fx = { ...DEFAULT_FX };
-  try {
-    const res = await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,BRL,GBP,MXN", { signal: AbortSignal.timeout(4000) });
-    if (res.ok) {
-      const j = (await res.json()) as { rates?: Record<string, number> };
-      for (const [k, v] of Object.entries(j.rates ?? {})) if (v > 0) fx[k] = round2(v * 10000) / 10000;
-    }
-  } catch {
-    // keep fallbacks; rates stay editable in the builder
-  }
-  return fx;
-}
+import { ecbRates } from "@/lib/fx";
 
 export async function createProposal(fd: FormData) {
   const { sb, user } = await requireStaff();
@@ -30,7 +16,7 @@ export async function createProposal(fd: FormData) {
   const valid = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
   const { data: p, error } = await sb
     .from("proposals")
-    .insert({ lead_id: leadId, version: (last?.version ?? 0) + 1, pax: lead.pax || 10, fx: await liveFx(), valid_until: valid, created_by: user.id })
+    .insert({ lead_id: leadId, version: (last?.version ?? 0) + 1, pax: lead.pax || 10, fx: await ecbRates(), valid_until: valid, created_by: user.id })
     .select("id")
     .single();
   if (error || !p) redirect(`/pipeline/${leadId}?error=proposal`);
@@ -178,4 +164,15 @@ export async function newVersion(fd: FormData) {
   }
   revalidatePath("/proposals");
   redirect(`/proposals/${np.id}`);
+}
+
+/** The client said yes: lock the proposal and create the project file (one database step). */
+export async function approveProposal(fd: FormData) {
+  const { sb } = await requireStaff();
+  const id = String(fd.get("id") ?? "");
+  const { data, error } = await sb.rpc("approve_proposal", { p_proposal: id });
+  if (error || !data) redirect(`/proposals/${id}?error=${encodeURIComponent(error?.message ?? "approve")}`);
+  revalidatePath("/projects");
+  revalidatePath("/pipeline");
+  redirect(`/projects/${data}`);
 }

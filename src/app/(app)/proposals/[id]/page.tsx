@@ -13,9 +13,9 @@ type LineRow = {
   proposal_line_costs: { supplier_id: string | null; supplier_text: string | null; net_unit: number; net_currency: string; margin_pct: number; is_estimate: boolean } | null;
 };
 
-export default async function ProposalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string }> }) {
+export default async function ProposalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; error?: string }> }) {
   const { id } = await params;
-  const { sent } = await searchParams;
+  const { sent, error } = await searchParams;
   const { sb } = await requireStaff();
   const { data: p } = await sb
     .from("proposals")
@@ -67,6 +67,8 @@ export default async function ProposalPage({ params, searchParams }: { params: P
           ))}
         </div>
       )}
+      {error && <div className="err" style={{ marginBottom: 14 }}>The project could not be created: {error}</div>}
+      {p.status === "Approved" && <ProjectLink leadId={lead.id} />}
       {sent && p.status === "Sent" && (
         <div className="okmsg" style={{ marginBottom: 14 }}>
           Sent. Share this link with the client: <b style={{ userSelect: "all" }}>{`${origin}/p/${p.share_token}`}</b>
@@ -86,4 +88,11 @@ export default async function ProposalPage({ params, searchParams }: { params: P
       />
     </>
   );
+}
+
+async function ProjectLink({ leadId }: { leadId: string }) {
+  const { sb } = await requireStaff();
+  const { data } = await sb.from("projects").select("id, code").eq("lead_id", leadId).maybeSingle();
+  if (!data) return null;
+  return <div className="okmsg" style={{ marginBottom: 14 }}>Approved by the client. <Link href={`/projects/${data.id}`}><b>Open project {data.code}</b></Link></div>;
 }

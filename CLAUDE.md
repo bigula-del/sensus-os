@@ -14,7 +14,7 @@ Spec: the "Sensus OS & Companion PWA — Product Specification" doc. Clickable p
   `cacheComponents` is deliberately OFF: every page depends on the signed-in user.
 - Supabase (Postgres, Auth, Storage), EU region. Schema in `supabase/migrations/`.
 - Hosting: Vercel (sensus-os.vercel.app). Supabase project URL and publishable key are in `src/lib/supabase/config.ts` (public by design);
-  the only env var is `SUPABASE_SERVICE_ROLE_KEY` (secret, Vercel only). Pushing to `main` deploys automatically.
+  env vars: `SUPABASE_SERVICE_ROLE_KEY` (secret), `ANTHROPIC_API_KEY` (secret, optional: AI receipt reading). Pushing to `main` deploys automatically.
 
 ## Non-negotiable rules
 1. **Internal costs never reach clients.** Net prices, actual costs, margins, expenses and supplier data live in
@@ -49,4 +49,9 @@ People (admin, read-only), Team & access (invite, roles, block), public client p
 Proposals (builder with internal net/margin columns, FOC, single supplement, locked FX, US$60 meal preset, versions, send + client link, staff preview).
 Proposal maths lives in src/lib/proposals.ts; the server recalculates sell totals on save.
 Leads are numbered from 680735 (`leads.number`, sequence `lead_number_seq`); the number is the client-facing reference.
-Next: projects created from approved proposals + expenses (AI receipt reading) + final margin, then calendar.
+Projects: approve_proposal() turns a Sent proposal into a project (code = lead number), services carry sell (client) and net (internal, project_service_costs).
+Project finance in src/lib/projects.ts (projected while running, final when Completed). Payments received in client_payments.
+Expenses: receipts upload from the browser to the private `receipts` bucket (shrunk on device), AI reading via Anthropic API when
+ANTHROPIC_API_KEY is set in Vercel (optional ANTHROPIC_MODEL), EUR conversion at ECB rate of the expense date, approval by admin/finance.
+SQL migrations must be pasted by Matheus in Supabase SQL Editor (no DB access from the build environment).
+Next: calendar and reminders, then notes, chat, forms, e-signature, inbox (Office 365), marketing.

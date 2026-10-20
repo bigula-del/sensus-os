@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { money } from "@/lib/format";
 import { CURRENCIES, DEFAULT_FX, lineNetEUR, lineSellQuote, proposalTotals, type Basis, type Fx, type LineInput } from "@/lib/proposals";
-import { newVersion, saveProposal, sendProposal, type SavePayload } from "../actions";
+import { approveProposal, newVersion, saveProposal, sendProposal, type SavePayload } from "../actions";
 
 type Supplier = { id: string; name: string; city: string | null };
 const uuid = () => crypto.randomUUID();
@@ -67,7 +67,10 @@ export function Builder({ id, status, shareUrl, initial, suppliers }: { id: stri
         <div className="panel pad spread">
           <div><b>Version sent to the client.</b> <span className="note">It can no longer be changed, so the client always sees what was sent.</span>
             {shareUrl && <div className="note" style={{ marginTop: 4 }}>Client link: <b style={{ userSelect: "all" }}>{shareUrl}</b></div>}</div>
-          <form action={newVersion}><input type="hidden" name="id" value={id} /><button className="btn primary">Create new version to edit</button></form>
+          <div className="row">
+            <form action={newVersion}><input type="hidden" name="id" value={id} /><button className="btn">Create new version to edit</button></form>
+            {status === "Sent" && <form action={approveProposal}><input type="hidden" name="id" value={id} /><button className="btn primary">Client approved: create project</button></form>}
+          </div>
         </div>
       )}
 

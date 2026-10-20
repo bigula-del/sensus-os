@@ -78,3 +78,31 @@ select pg_temp.assert((select count(*) from public.chat_messages)=0,'non-member 
 select pg_temp.assert((select count(*) from public.leads)=2,'operations reads leads');
 reset role;
 \echo ALL SECURITY TESTS PASSED
+
+-- ── projects from approved proposals ──
+set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);
+update public.proposals set fx = '{"EUR":1,"USD":1.2}', foc_places = 2, pax = 20 where id = '30000000-0000-0000-0000-000000000001';
+update public.proposal_line_costs set net_unit = 60, net_currency = 'USD', margin_pct = 20 where line_id = '50000000-0000-0000-0000-000000000001';
+select pg_temp.assert(public.approve_proposal('30000000-0000-0000-0000-000000000001') is not null,'sales approves a proposal into a project');
+select pg_temp.assert((select code from public.projects) = '680735','project code is the lead number');
+select pg_temp.assert((select stage from public.leads where id='20000000-0000-0000-0000-000000000001') = 'Won','lead moves to Won');
+select pg_temp.assert((select net_eur from public.project_service_costs) = 1100,'net cost = US$60 x 22 people / 1.2');
+select pg_temp.assert((select sell_eur from public.project_services) = 6840,'client price carried into the project');
+do $$ begin perform public.approve_proposal('30000000-0000-0000-0000-000000000001'); raise exception 'FAILED: approved twice';
+exception when others then if sqlerrm like 'FAILED%' then raise; end if; raise notice 'ok  a proposal cannot be approved twice'; end $$;
+reset role;
+set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000003',false);
+select pg_temp.assert((select count(*) from public.projects)=0,'client cannot read projects');
+select pg_temp.assert((select count(*) from public.project_service_costs)=0,'client cannot read project costs');
+do $$ begin perform public.approve_proposal('30000000-0000-0000-0000-000000000001'); raise exception 'FAILED: client approved';
+exception when others then if sqlerrm like 'FAILED%' then raise; end if; raise notice 'ok  client cannot approve proposals'; end $$;
+reset role;
+-- receipts bucket
+set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);
+insert into storage.objects(bucket_id, name) values ('receipts','2026/test.jpg');
+select pg_temp.assert((select count(*) from storage.objects where bucket_id='receipts')=1,'staff uploads and reads receipts');
+reset role;
+set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000003',false);
+select pg_temp.assert((select count(*) from storage.objects where bucket_id='receipts')=0,'client cannot see receipts');
+reset role;
+\echo ALL PROJECT TESTS PASSED

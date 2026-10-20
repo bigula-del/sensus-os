@@ -7,9 +7,9 @@ import type { Role } from "@/lib/auth";
 type Item = { href: string; label: string; soon?: boolean; adminOnly?: boolean };
 const GROUPS: { label?: string; items: Item[] }[] = [
   { items: [{ href: "/", label: "Today" }] },
-  { label: "Sell", items: [{ href: "/pipeline", label: "Pipeline" }, { href: "/proposals", label: "Proposals" }, { href: "/projects", label: "Projects", soon: true }] },
+  { label: "Sell", items: [{ href: "/pipeline", label: "Pipeline" }, { href: "/proposals", label: "Proposals" }, { href: "/projects", label: "Projects" }] },
   { label: "Daily work", items: [{ href: "/calendar", label: "Calendar", soon: true }, { href: "/inbox", label: "Inbox", soon: true }, { href: "/chat", label: "Team chat", soon: true }, { href: "/notes", label: "Notes", soon: true }] },
-  { label: "Money", items: [{ href: "/expenses", label: "Expenses", soon: true }] },
+  { label: "Money", items: [{ href: "/expenses", label: "Expenses" }] },
   { label: "Clients", items: [{ href: "/forms", label: "Forms", soon: true }, { href: "/sign", label: "E-signature", soon: true }] },
   { label: "Growth", items: [{ href: "/marketing", label: "Marketing", soon: true }] },
   { label: "Setup", items: [{ href: "/suppliers", label: "Suppliers" }, { href: "/people", label: "People", adminOnly: true }, { href: "/settings/team", label: "Team & access", adminOnly: true }] },
