@@ -48,4 +48,5 @@ Done: schema + security rules, login, team accounts created by the admin with a 
 People (admin, read-only), Team & access (invite, roles, block), public client proposal page,
 Proposals (builder with internal net/margin columns, FOC, single supplement, locked FX, US$60 meal preset, versions, send + client link, staff preview).
 Proposal maths lives in src/lib/proposals.ts; the server recalculates sell totals on save.
+Leads are numbered from 680735 (`leads.number`, sequence `lead_number_seq`); the number is the client-facing reference.
 Next: projects created from approved proposals + expenses (AI receipt reading) + final margin, then calendar.

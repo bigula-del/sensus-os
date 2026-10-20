@@ -19,7 +19,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
   const { sb } = await requireStaff();
   const { data: p } = await sb
     .from("proposals")
-    .select("id, version, status, quote_currency, pax, foc_places, single_supplement, valid_until, fx, intro, share_token, lead_id, leads(id, title, kind, dates_text, clients(name), contacts(full_name))")
+    .select("id, version, status, quote_currency, pax, foc_places, single_supplement, valid_until, fx, intro, share_token, lead_id, leads(*, clients(name), contacts(full_name))")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
@@ -29,7 +29,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
     sb.from("suppliers").select("id, name, city").order("name"),
     sb.from("proposals").select("id, version, status").eq("lead_id", p.lead_id).order("version"),
   ]);
-  const lead = p.leads as unknown as { id: string; title: string; kind: string; dates_text: string | null; clients: { name: string } | null; contacts: { full_name: string } | null };
+  const lead = p.leads as unknown as { number?: number | null; id: string; title: string; kind: string; dates_text: string | null; clients: { name: string } | null; contacts: { full_name: string } | null };
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
 
@@ -46,6 +46,7 @@ export default async function ProposalPage({ params, searchParams }: { params: P
         <div>
           <div className="chips">
             <span className={`chip ${lead.kind === "MICE" ? "mice" : ""}`}>{lead.kind}</span>
+            {lead.number && <span className="chip">#{lead.number}</span>}
             <span className="chip">Version {p.version}</span>
             <span className={`chip ${p.status === "Sent" ? "info" : p.status === "Approved" ? "good" : p.status === "Draft" ? "warn" : ""}`}>{p.status}</span>
           </div>

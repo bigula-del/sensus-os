@@ -12,7 +12,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
   const { sb } = await requireStaff();
   const { data: p } = await sb
     .from("proposals")
-    .select("id, version, status, quote_currency, pax, single_supplement, valid_until, intro, leads(title, dates_text, clients(name))")
+    .select("id, version, status, quote_currency, pax, single_supplement, valid_until, intro, leads(*, clients(name))")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
@@ -20,8 +20,9 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
     sb.from("proposal_days").select("day_number, title").eq("proposal_id", id).order("day_number"),
     sb.from("proposal_lines").select("day_number, sort, service, description, sell_total_quote").eq("proposal_id", id).order("sort"),
   ]);
-  const lead = p.leads as unknown as { title: string; dates_text: string | null; clients: { name: string } | null };
+  const lead = p.leads as unknown as { number?: number | null; title: string; dates_text: string | null; clients: { name: string } | null };
   const doc: ClientProposal = {
+    ref: lead.number ?? null,
     title: lead.title,
     client: lead.clients?.name ?? null,
     dates: lead.dates_text,

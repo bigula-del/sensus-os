@@ -2,6 +2,7 @@ import { money } from "@/lib/format";
 
 /** Client-facing proposal content. Contains NO cost, margin or supplier fields by design. */
 export type ClientProposal = {
+  ref?: number | null;
   title: string;
   client: string | null;
   dates: string | null;
@@ -30,7 +31,7 @@ export function ProposalDoc({ p }: { p: ClientProposal }) {
           {p.dates && <div><b>Dates</b>{p.dates}</div>}
           <div><b>Group</b>{p.pax} participants</div>
           <div><b>Duration</b>{p.days.length} {p.days.length === 1 ? "day" : "days"}</div>
-          <div><b>Version</b>{p.version}</div>
+          <div><b>Reference</b>{p.ref ? `${p.ref} · v${p.version}` : `v${p.version}`}</div>
         </div>
       </header>
       <div className="docbody">

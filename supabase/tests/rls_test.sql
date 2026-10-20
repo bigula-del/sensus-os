@@ -39,6 +39,8 @@ do $$ begin update public.profiles set role='admin' where id='00000000-0000-0000
 exception when insufficient_privilege then null; end $$;
 select pg_temp.assert((select role from public.profiles where id='00000000-0000-0000-0000-000000000002')='sales','sales cannot promote self');
 select pg_temp.assert(public.request_leave('Holiday','2026-12-23','2026-12-27',3) is not null,'sales can request leave');
+insert into public.leads(title) values ('new from sales');
+select pg_temp.assert((select number from public.leads where title='new from sales') > (select number from public.leads where title like 'Incentive%'),'new lead gets the next number');
 reset role;
 
 -- as the client
@@ -56,6 +58,7 @@ do $$ begin perform count(*) from public.leads; raise exception 'FAILED: anon re
 exception when insufficient_privilege then raise notice 'ok  anonymous visitors cannot read tables'; end $$;
 select pg_temp.assert((public.client_proposal('40000000-0000-0000-0000-000000000001')->>'total')::numeric=6840,'share link shows client total');
 select pg_temp.assert(public.client_proposal('40000000-0000-0000-0000-000000000001')::text !~* '(net|margin|cost|supplier)','client proposal carries no internal fields');
+select pg_temp.assert((public.client_proposal('40000000-0000-0000-0000-000000000001')->>'ref')::bigint = 680735,'client proposal shows the lead number');
 select pg_temp.assert(public.client_proposal(gen_random_uuid()) is null,'wrong link shows nothing');
 reset role;
 
@@ -72,6 +75,6 @@ insert into auth.users(id,email) values ('00000000-0000-0000-0000-000000000004',
 update public.profiles set role='operations' where id='00000000-0000-0000-0000-000000000004';
 set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004',false);
 select pg_temp.assert((select count(*) from public.chat_messages)=0,'non-member cannot read DM');
-select pg_temp.assert((select count(*) from public.leads)=1,'operations reads leads');
+select pg_temp.assert((select count(*) from public.leads)=2,'operations reads leads');
 reset role;
 \echo ALL SECURITY TESTS PASSED

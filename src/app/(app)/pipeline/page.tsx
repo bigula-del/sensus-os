@@ -6,7 +6,7 @@ import { money, STAGES } from "@/lib/format";
 export const metadata: Metadata = { title: "Pipeline" };
 
 type LeadRow = {
-  id: string; title: string; kind: string; stage: string; destinations: string[]; dates_text: string | null;
+  number?: number | null; id: string; title: string; kind: string; stage: string; destinations: string[]; dates_text: string | null;
   pax: number | null; market: string | null; estimated_value_eur: number | null; clients: { name: string } | null;
 };
 
@@ -14,7 +14,7 @@ export default async function PipelinePage() {
   const { sb } = await requireStaff();
   const { data } = await sb
     .from("leads")
-    .select("id, title, kind, stage, destinations, dates_text, pax, market, estimated_value_eur, clients(name)")
+    .select("*, clients(name)")
     .neq("stage", "Lost")
     .order("created_at", { ascending: false })
     .returns<LeadRow[]>();
@@ -54,7 +54,7 @@ export default async function PipelinePage() {
                         <span className={`chip ${l.kind === "MICE" ? "mice" : ""}`}>{l.kind}</span>
                         {l.destinations.map((c) => <span key={c} className="cc">{c}</span>)}
                       </div>
-                      <div><div className="t1">{l.title}</div><div className="c">{l.clients?.name}{l.market ? ` · from ${l.market}` : ""}</div></div>
+                      <div>{l.number && <div className="note" style={{ fontWeight: 600 }}>#{l.number}</div>}<div className="t1">{l.title}</div><div className="c">{l.clients?.name}{l.market ? ` · from ${l.market}` : ""}</div></div>
                       <div className="meta"><span className="c">{[l.dates_text, l.pax ? `${l.pax} pax` : null].filter(Boolean).join(" · ")}</span><b>{money(val(l))}</b></div>
                     </Link>
                   ))}

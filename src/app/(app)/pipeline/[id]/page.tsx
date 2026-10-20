@@ -9,7 +9,7 @@ import { createProposal } from "../../proposals/actions";
 export const metadata: Metadata = { title: "Lead" };
 
 type Lead = {
-  id: string; title: string; kind: string; stage: string; destinations: string[]; dates_text: string | null; start_date: string | null; end_date: string | null;
+  number?: number | null; id: string; title: string; kind: string; stage: string; destinations: string[]; dates_text: string | null; start_date: string | null; end_date: string | null;
   pax: number | null; market: string | null; source: string | null; estimated_value_eur: number | null; lost_reason: string | null; created_at: string;
   clients: { name: string; kind: string } | null; contacts: { full_name: string; email: string | null } | null; profiles: { full_name: string } | null;
 };
@@ -29,7 +29,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     <>
       <div className="head">
         <div>
-          <div className="chips"><span className={`chip ${l.kind === "MICE" ? "mice" : ""}`}>{l.kind}</span><span className="chip">{l.stage}</span></div>
+          <div className="chips"><span className={`chip ${l.kind === "MICE" ? "mice" : ""}`}>{l.kind}</span><span className="chip">{l.stage}</span>{l.number && <span className="chip">#{l.number}</span>}</div>
           <h1 style={{ marginTop: 8 }}>{l.title}</h1>
           <p className="sub">{l.clients?.name}{l.contacts ? ` · ${l.contacts.full_name}` : ""}</p>
         </div>

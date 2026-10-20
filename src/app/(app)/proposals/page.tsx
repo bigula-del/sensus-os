@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Proposals" };
 
 type Row = {
   id: string; version: number; status: string; quote_currency: string; pax: number; updated_at: string;
-  leads: { id: string; title: string; clients: { name: string } | null } | null;
+  leads: { number?: number | null; id: string; title: string; clients: { name: string } | null } | null;
   proposal_lines: { sell_total_quote: number }[];
 };
 
@@ -16,7 +16,7 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
   const { sb } = await requireStaff();
   let q = sb
     .from("proposals")
-    .select("id, version, status, quote_currency, pax, updated_at, leads(id, title, clients(name)), proposal_lines(sell_total_quote)")
+    .select("id, version, status, quote_currency, pax, updated_at, leads(*, clients(name)), proposal_lines(sell_total_quote)")
     .order("updated_at", { ascending: false })
     .limit(200);
   if (status === "Open") q = q.in("status", ["Draft", "Sent"]);
@@ -39,10 +39,11 @@ export default async function ProposalsPage({ searchParams }: { searchParams: Pr
       ) : (
         <div className="panel tablewrap">
           <table className="t" style={{ minWidth: 720 }}>
-            <thead><tr><th>Programme</th><th>Client</th><th>Version</th><th>Status</th><th className="num">Total to client</th><th>Updated</th></tr></thead>
+            <thead><tr><th>Lead</th><th>Programme</th><th>Client</th><th>Version</th><th>Status</th><th className="num">Total to client</th><th>Updated</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
+                  <td>{r.leads?.number ? `#${r.leads.number}` : "—"}</td>
                   <td><Link href={`/proposals/${r.id}`}><b>{r.leads?.title}</b></Link></td>
                   <td>{r.leads?.clients?.name}</td>
                   <td>v{r.version}</td>
