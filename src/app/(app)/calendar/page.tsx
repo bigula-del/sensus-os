@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth";
 import { shortDate } from "@/lib/format";
+import { holidaysBetween } from "@/lib/holidays";
 import { deleteEvent, setDone } from "./actions";
 import { EventForm } from "./event-form";
 
@@ -39,6 +40,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     sb.from("profiles").select("id, full_name").neq("role", "client").eq("active", true).order("full_name"),
   ]);
   const events = evs ?? [];
+  const hols = holidaysBetween(from, to);
   const sel = sp.ev ? events.find((e) => e.id === sp.ev) : null;
   const title = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const href = (q: Record<string, string>) => `/calendar?${new URLSearchParams({ m: month, ...(sp.mine ? { mine: "1" } : {}), ...q })}`;
@@ -85,6 +87,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         <span style={{ "--c": "var(--ink)" } as React.CSSProperties}>Project</span>
         <span style={{ "--c": "var(--info)" } as React.CSSProperties}>Meeting</span>
         <span style={{ "--c": "var(--warn)" } as React.CSSProperties}>Reminder</span>
+        <span style={{ "--c": "var(--good)" } as React.CSSProperties}>Public holiday (10 countries)</span>
         <Link className="seg" href={sp.mine ? `/calendar?m=${month}` : `/calendar?m=${month}&mine=1`} aria-pressed={!!sp.mine} style={{ marginLeft: "auto" }}>Only mine</Link>
       </div>
       <div className="side side-r">
@@ -98,6 +101,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               return (
                 <div key={k} className={`cell ${d.getMonth() !== m - 1 ? "out" : ""} ${k === today ? "today" : ""}`}>
                   <Link className="dn" href={href({ add: "1", date: k })} title="Add on this day" style={{ textDecoration: "none" }}>{d.getDate()}</Link>
+                  {Object.entries(hols.filter((h) => h.date === k).reduce<Record<string, string[]>>((a, h) => ((a[h.name] ??= []).push(h.flag), a), {})).map(([name, flags]) => (
+                    <span key={name} className="ev holiday" title={`Public holiday: ${name}`}>{flags.join("")} {name}</span>
+                  ))}
                   {dayProjects.map((p) => <Link key={p.id} className="ev project" href={`/projects/${p.id}`} title={`#${p.code} ${p.title}`}>#{p.code} {p.title}</Link>)}
                   {dayEvs.map((e) => (
                     <Link key={e.id} className={`ev ${e.kind}`} href={href({ ev: e.id })} title={e.title} style={e.done ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>
@@ -123,7 +129,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           ) : <div className="empty">Nothing coming up. Add a reminder with the button above.</div>}
         </section>
       </div>
-      <p className="note">Click a day number to add something on that day. Reminders appear on Today. Syncing with Outlook comes with the Inbox module.</p>
+      <p className="note">Click a day number to add something on that day. Reminders appear on Today. Public holidays are shown for Portugal, Spain, France, Italy, Cape Verde, Brazil, Argentina, Chile, Colombia and Mexico.</p>
     </>
   );
 }

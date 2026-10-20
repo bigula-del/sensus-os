@@ -63,4 +63,11 @@ Inbox (/inbox): each person connects their own Microsoft 365 mailbox (OAuth, /ap
 Refresh tokens are AES-GCM encrypted (key derived from SUPABASE_SERVICE_ROLE_KEY) in `ms_accounts`, readable only by the service role.
 Graph helper in src/lib/microsoft.ts (immutable message IDs). Read/search/reply/compose, link email to lead/project (`email_links` keeps a text copy
 so the team can read it), create lead from email (AI when ANTHROPIC_API_KEY is set), "Send by email" for proposal and signing links.
+Home (/): mini month calendar (events, project days, holiday flags), coming up 30 days, quick notes & reminders window (home-actions.ts),
+public holidays next 60 days for the 10 countries (src/lib/holidays.ts, date-holidays package, public + bank types), destination news
+(src/lib/news.ts: Google News RSS per country, tourism + travel alerts + MICE industry, cached 30 min). Holidays also on /calendar.
+Itineraries (/itineraries, Travefy/Tern style): itineraries / itinerary_days / itinerary_items / itinerary_library, saved atomically via
+save_itinerary(); travellers open /i/[token] via client_itinerary() (Shared only, no internal notes, no prices); print-to-PDF; public
+`itinerary-media` bucket for photos; Wikimedia Commons photo search + Wikipedia descriptions (src/lib/web-content.ts); AI draft/polish via src/lib/ai.ts;
+start from a proposal (no prices), duplicate as template, content library, send link by email.
 Next: Outlook calendar sync, Marketing (needs Meta/LinkedIn or a scheduler like Buffer).

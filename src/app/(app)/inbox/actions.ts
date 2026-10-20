@@ -184,7 +184,7 @@ export async function emailClientLink(input: { to: string; subject: string; mess
   const { user, profile } = await requireStaff();
   const to = emails(input.to);
   if (!to.length) return { error: "Add the client's email." };
-  if (!/^https:\/\/[\w.-]+\/(p|sign|f)\/[0-9a-f-]{36}$/i.test(input.href)) return { error: "Invalid link." };
+  if (!/^https:\/\/[\w.-]+\/(p|sign|f|i)\/[0-9a-f-]{36}$/i.test(input.href)) return { error: "Invalid link." };
   try {
     await sendMail(user.id, to, (input.subject || "Sensus Travel DMC").slice(0, 300), brandedHtml(input.message.trim().split(/\n{2,}/).filter(Boolean), profile.full_name, { href: input.href, label: input.label.slice(0, 60) }));
     return { ok: true };

@@ -139,3 +139,40 @@ do $$ begin perform count(*) from public.ms_accounts; raise exception 'FAILED: a
 exception when insufficient_privilege then raise notice 'ok  visitors cannot read Microsoft tokens'; end $$;
 reset role;
 \echo ALL MICROSOFT TESTS PASSED
+
+-- ── itineraries: travellers see only shared itineraries, never internal notes ──
+insert into public.itineraries(id,title,status,share_token,internal_notes,lead_id) values
+ ('80000000-0000-0000-0000-000000000001','Lisbon & Douro','Shared','81000000-0000-0000-0000-000000000001','supplier pays 10% commission','20000000-0000-0000-0000-000000000001'),
+ ('80000000-0000-0000-0000-000000000002','Draft trip','Draft','81000000-0000-0000-0000-000000000002',null,null);
+insert into public.itinerary_days(itinerary_id,day_number,title) values ('80000000-0000-0000-0000-000000000001',1,'Arrival');
+insert into public.itinerary_items(itinerary_id,day_number,sort,kind,title,start_time,internal_notes,booking_ref) values
+ ('80000000-0000-0000-0000-000000000001',1,1,'transfer','Airport pick-up','10:30','driver net €80','TP1234');
+set role anon;
+do $$ begin perform count(*) from public.itineraries; raise exception 'FAILED: visitors read itineraries';
+exception when insufficient_privilege then raise notice 'ok  visitors cannot read itinerary tables'; end $$;
+select pg_temp.assert(public.client_itinerary('81000000-0000-0000-0000-000000000001') is not null,'shared itinerary opens with its link');
+select pg_temp.assert(public.client_itinerary('81000000-0000-0000-0000-000000000002') is null,'draft itinerary is not visible');
+select pg_temp.assert(public.client_itinerary('81000000-0000-0000-0000-000000000001')::text not like '%commission%','itinerary internal notes hidden');
+select pg_temp.assert(public.client_itinerary('81000000-0000-0000-0000-000000000001')::text not like '%driver net%','item internal notes hidden');
+select pg_temp.assert(public.client_itinerary('81000000-0000-0000-0000-000000000001')->'days'->0->'items'->0->>'start_time' = '10:30','times shown to traveller');
+select pg_temp.assert((public.client_itinerary('81000000-0000-0000-0000-000000000001')->>'ref')::int >= 680735,'lead reference shown');
+reset role;
+set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000003',false);
+select pg_temp.assert((select count(*) from public.itineraries)=0,'client accounts cannot list itineraries');
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',false);
+select pg_temp.assert((select count(*) from public.itineraries)=2,'staff read itineraries');
+insert into public.itinerary_library(title,kind) values ('Pestana Palace','hotel');
+select pg_temp.assert((select count(*) from public.itinerary_library)=1,'staff add to library');
+select public.save_itinerary('80000000-0000-0000-0000-000000000002', '{"title":"Porto weekend","pax":12,"destinations":["PT"]}',
+  '[{"day_number":1,"title":"Arrival"},{"day_number":2,"title":"Douro"}]',
+  '[{"day_number":2,"sort":1,"kind":"meal","title":"Lunch at Quinta","start_time":"13:00"},{"day_number":1,"sort":0,"kind":"transfer","title":"Pick-up"}]');
+select pg_temp.assert((select title from public.itineraries where id='80000000-0000-0000-0000-000000000002')='Porto weekend','staff save itinerary header');
+select pg_temp.assert((select count(*) from public.itinerary_items where itinerary_id='80000000-0000-0000-0000-000000000002')=2,'staff save itinerary items');
+select pg_temp.assert((select count(*) from public.itinerary_days where itinerary_id='80000000-0000-0000-0000-000000000002')=2,'staff save itinerary days');
+reset role;
+set role anon;
+do $$ begin perform public.save_itinerary('80000000-0000-0000-0000-000000000001','{"title":"hacked"}','[]','[]'); raise exception 'FAILED: visitor saved itinerary';
+exception when insufficient_privilege then raise notice 'ok  visitors cannot save itineraries'; end $$;
+reset role;
+select pg_temp.assert((select title from public.itineraries where id='80000000-0000-0000-0000-000000000001')='Lisbon & Douro','itinerary untouched by visitor');
+\echo ALL ITINERARY TESTS PASSED
