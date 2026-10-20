@@ -7,6 +7,7 @@ import { PROJECT_STATUSES, projectFinance, type ServiceRow } from "@/lib/project
 import { setProjectStatus } from "../actions";
 import { setDone } from "../../calendar/actions";
 import { PaymentForm } from "./payment-form";
+import { LinkedEmails, type LinkedEmail } from "@/components/linked-emails";
 
 export const metadata: Metadata = { title: "Project" };
 
@@ -18,10 +19,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const { sb } = await requireStaff();
   const { data: p } = await sb.from("projects").select("*, clients(name), leads(id, number), proposals(id, version)").eq("id", id).maybeSingle();
   if (!p) notFound();
-  const [{ data: svcs }, { data: exps }, { data: pays }] = await Promise.all([
+  const [{ data: svcs }, { data: exps }, { data: pays }, { data: mails }] = await Promise.all([
     sb.from("project_services").select("id, service, sell_eur, sort, project_service_costs(net_eur, suppliers(name))").eq("project_id", id).order("sort").returns<Svc[]>(),
     sb.from("expenses").select("id, spent_on, supplier_name, description, amount, currency, amount_eur, category, service_id, status, receipt_path").eq("project_id", id).order("spent_on", { ascending: false }).returns<Exp[]>(),
     sb.from("client_payments").select("id, received_on, amount_eur, reference").eq("project_id", id).order("received_on"),
+    sb.from("email_links").select("message_id, subject, sender, recipients, received_at, body_text, created_at").eq("project_id", id).order("received_at", { ascending: false }).returns<LinkedEmail[]>(),
   ]);
   const { data: evs } = await sb.from("events").select("id, starts_on, starts_at, title, kind, done").eq("project_id", id).order("starts_on").order("starts_at", { nullsFirst: true });
   const services: ServiceRow[] = (svcs ?? []).map((s) => ({ id: s.id, service: s.service, sell_eur: Number(s.sell_eur), net_eur: Number(s.project_service_costs?.net_eur ?? 0), supplier: s.project_service_costs?.suppliers?.name ?? null }));
@@ -134,6 +136,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <span className="note">Mark it Completed when every invoice is in: the margin then becomes final.</span>
         </form>
       </section>
+      <LinkedEmails rows={mails ?? []} from={`/projects/${id}`} />
     </>
   );
 }

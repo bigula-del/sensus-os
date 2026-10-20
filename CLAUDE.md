@@ -14,7 +14,8 @@ Spec: the "Sensus OS & Companion PWA — Product Specification" doc. Clickable p
   `cacheComponents` is deliberately OFF: every page depends on the signed-in user.
 - Supabase (Postgres, Auth, Storage), EU region. Schema in `supabase/migrations/`.
 - Hosting: Vercel (sensus-os.vercel.app). Supabase project URL and publishable key are in `src/lib/supabase/config.ts` (public by design);
-  env vars: `SUPABASE_SERVICE_ROLE_KEY` (secret), `ANTHROPIC_API_KEY` (secret, optional: AI receipt reading). Pushing to `main` deploys automatically.
+  env vars: `SUPABASE_SERVICE_ROLE_KEY` (secret), `ANTHROPIC_API_KEY` (secret, optional: AI receipt reading, lead from email),
+  `MS_CLIENT_ID` + `MS_TENANT_ID` (Entra app, not secret) and `MS_CLIENT_SECRET` (secret) for Outlook. Pushing to `main` deploys automatically.
 
 ## Non-negotiable rules
 1. **Internal costs never reach clients.** Net prices, actual costs, margins, expenses and supplier data live in
@@ -58,4 +59,8 @@ Calendar: /calendar month view (events + project days), reminders on Today and p
 Notes (/notes, autosave, private unless shared or linked to a project). Team chat (/chat, channels, project channels, DMs, 8s auto-refresh; no realtime yet).
 Forms (/forms builder with templates, public /f/[token] via public_form/submit_form). E-signature (/signatures staff, public /sign/[token]
 via sign_open/sign_complete/sign_decline, private `documents` bucket, SHA-256 fingerprint + audit trail; simple electronic signature).
-Next: Inbox (Microsoft 365 via Graph: needs Entra app registration) and Marketing (needs Meta/LinkedIn or a scheduler like Buffer).
+Inbox (/inbox): each person connects their own Microsoft 365 mailbox (OAuth, /api/microsoft/connect + callback, delegated Graph scopes).
+Refresh tokens are AES-GCM encrypted (key derived from SUPABASE_SERVICE_ROLE_KEY) in `ms_accounts`, readable only by the service role.
+Graph helper in src/lib/microsoft.ts (immutable message IDs). Read/search/reply/compose, link email to lead/project (`email_links` keeps a text copy
+so the team can read it), create lead from email (AI when ANTHROPIC_API_KEY is set), "Send by email" for proposal and signing links.
+Next: Outlook calendar sync, Marketing (needs Meta/LinkedIn or a scheduler like Buffer).

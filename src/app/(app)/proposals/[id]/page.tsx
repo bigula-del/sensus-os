@@ -3,6 +3,8 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
+import { connectedEmail } from "@/lib/microsoft";
+import { EmailLinkForm } from "@/components/email-link";
 import type { Basis, Fx, LineInput } from "@/lib/proposals";
 import { Builder } from "./builder";
 
@@ -16,10 +18,10 @@ type LineRow = {
 export default async function ProposalPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ sent?: string; error?: string }> }) {
   const { id } = await params;
   const { sent, error } = await searchParams;
-  const { sb } = await requireStaff();
+  const { sb, user } = await requireStaff();
   const { data: p } = await sb
     .from("proposals")
-    .select("id, version, status, quote_currency, pax, foc_places, single_supplement, valid_until, fx, intro, share_token, lead_id, leads(*, clients(name), contacts(full_name))")
+    .select("id, version, status, quote_currency, pax, foc_places, single_supplement, valid_until, fx, intro, share_token, lead_id, leads(*, clients(name), contacts(full_name, email))")
     .eq("id", id)
     .maybeSingle();
   if (!p) notFound();
@@ -29,9 +31,10 @@ export default async function ProposalPage({ params, searchParams }: { params: P
     sb.from("suppliers").select("id, name, city").order("name"),
     sb.from("proposals").select("id, version, status").eq("lead_id", p.lead_id).order("version"),
   ]);
-  const lead = p.leads as unknown as { number?: number | null; id: string; title: string; kind: string; dates_text: string | null; clients: { name: string } | null; contacts: { full_name: string } | null };
+  const lead = p.leads as unknown as { number?: number | null; id: string; title: string; kind: string; dates_text: string | null; clients: { name: string } | null; contacts: { full_name: string; email: string | null } | null };
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
+  const mailbox = p.status === "Sent" ? await connectedEmail(user.id) : null;
 
   const initLines: LineInput[] = (lines ?? []).map((l) => ({
     id: l.id, day_number: l.day_number, sort: l.sort, service: l.service, description: l.description ?? "", basis: l.basis, units: Number(l.units),
@@ -72,6 +75,19 @@ export default async function ProposalPage({ params, searchParams }: { params: P
       {sent && p.status === "Sent" && (
         <div className="okmsg" style={{ marginBottom: 14 }}>
           Sent. Share this link with the client: <b style={{ userSelect: "all" }}>{`${origin}/p/${p.share_token}`}</b>
+        </div>
+      )}
+      {p.status === "Sent" && (
+        <div style={{ marginBottom: 14 }}>
+          <EmailLinkForm
+            connected={!!mailbox}
+            title="Send the proposal by email"
+            to={lead.contacts?.email ?? ""}
+            subject={`Your proposal from Sensus Travel DMC${lead.number ? ` · ref. ${lead.number}` : ""}`}
+            message={`Dear ${lead.contacts?.full_name?.split(" ")[0] ?? "client"},\n\nThank you for the opportunity. Please find our proposal for ${lead.title} at the link below.\n\nWe remain at your disposal for any adjustment.\n\nKind regards,`}
+            href={`${origin}/p/${p.share_token}`}
+            label="View proposal"
+          />
         </div>
       )}
       <Builder

@@ -127,3 +127,15 @@ reset role;
 select pg_temp.assert((select jsonb_array_length(audit) from public.signature_requests where id='70000000-0000-0000-0000-000000000001') = 2,'audit trail has viewed + signed');
 select pg_temp.assert((select audit->1->>'fingerprint' from public.signature_requests where id='70000000-0000-0000-0000-000000000001') = 'abc123','audit records document fingerprint');
 \echo ALL SIGNATURE TESTS PASSED
+
+-- ── microsoft tokens are server-only ──
+insert into public.ms_accounts(profile_id, email, refresh_token_enc) values ('00000000-0000-0000-0000-000000000001','m@sensustravel.com','enc');
+set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false);
+do $$ begin perform count(*) from public.ms_accounts; raise exception 'FAILED: staff read tokens';
+exception when insufficient_privilege then raise notice 'ok  even the admin cannot read Microsoft tokens from the browser'; end $$;
+reset role;
+set role anon;
+do $$ begin perform count(*) from public.ms_accounts; raise exception 'FAILED: anon read tokens';
+exception when insufficient_privilege then raise notice 'ok  visitors cannot read Microsoft tokens'; end $$;
+reset role;
+\echo ALL MICROSOFT TESTS PASSED

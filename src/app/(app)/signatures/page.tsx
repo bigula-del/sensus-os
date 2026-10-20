@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { requireStaff } from "@/lib/auth";
+import { connectedEmail } from "@/lib/microsoft";
+import { EmailLinkForm } from "@/components/email-link";
 import { shortDate } from "@/lib/format";
 import { deleteRequest, markSent } from "./actions";
 import { NewRequestForm } from "./new-request";
@@ -17,7 +19,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "numer
 
 export default async function SignaturesPage({ searchParams }: { searchParams: Promise<{ add?: string; r?: string }> }) {
   const sp = await searchParams;
-  const { sb } = await requireStaff();
+  const { sb, user } = await requireStaff();
   const [{ data }, { data: props }, { data: projects }] = await Promise.all([
     sb.from("signature_requests").select("*, projects(code)").order("created_at", { ascending: false }).limit(200).returns<R[]>(),
     sb.from("proposals").select("id, version, status, leads(number, title)").in("status", ["Sent", "Approved"]).order("updated_at", { ascending: false }).limit(100),
@@ -27,6 +29,7 @@ export default async function SignaturesPage({ searchParams }: { searchParams: P
   const sel = rows.find((r) => r.id === sp.r);
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host") ?? ""}`;
+  const mailbox = sel && ["Sent", "Viewed"].includes(sel.status) ? await connectedEmail(user.id) : null;
 
   return (
     <>
@@ -55,6 +58,17 @@ export default async function SignaturesPage({ searchParams }: { searchParams: P
             </div>
           ) : (
             <div className="okmsg">Signer link (send it by email or WhatsApp): <b style={{ userSelect: "all", wordBreak: "break-all" }}>{origin}/sign/{sel.token}</b></div>
+          )}
+          {["Sent", "Viewed"].includes(sel.status) && (
+            <EmailLinkForm
+              connected={!!mailbox}
+              title="Send the signing link by email"
+              to={sel.signer_email}
+              subject={`Signature requested: ${sel.name}`}
+              message={`Dear ${sel.signer_name.split(" ")[0]},\n\n${sel.message ? sel.message + "\n\n" : ""}Please review and sign “${sel.name}” at the link below. It takes less than a minute.\n\nKind regards,`}
+              href={`${origin}/sign/${sel.token}`}
+              label="Review and sign"
+            />
           )}
           {sel.status === "Signed" && sel.signature_png && (
             <div className="row" style={{ alignItems: "flex-end" }}>

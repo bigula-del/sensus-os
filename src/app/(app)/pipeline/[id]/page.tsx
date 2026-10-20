@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { ALL_STAGES, money, shortDate } from "@/lib/format";
 import { moveLead } from "../actions";
 import { createProposal } from "../../proposals/actions";
+import { LinkedEmails, type LinkedEmail } from "@/components/linked-emails";
 
 export const metadata: Metadata = { title: "Lead" };
 
@@ -23,7 +24,10 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     .eq("id", id)
     .maybeSingle<Lead>();
   if (!l) notFound();
-  const { data: proposals } = await sb.from("proposals").select("id, version, status, quote_currency, proposal_lines(sell_total_quote)").eq("lead_id", id).order("version", { ascending: false });
+  const [{ data: proposals }, { data: mails }] = await Promise.all([
+    sb.from("proposals").select("id, version, status, quote_currency, proposal_lines(sell_total_quote)").eq("lead_id", id).order("version", { ascending: false }),
+    sb.from("email_links").select("message_id, subject, sender, recipients, received_at, body_text, created_at").eq("lead_id", id).order("received_at", { ascending: false }).returns<LinkedEmail[]>(),
+  ]);
 
   return (
     <>
@@ -75,6 +79,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           )) : <div className="empty">No proposal yet. Start one to build the programme and price it.</div>}
         </section>
       </div>
+      <LinkedEmails rows={mails ?? []} from={`/pipeline/${l.id}`} />
     </>
   );
 }

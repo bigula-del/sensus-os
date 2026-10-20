@@ -8,7 +8,7 @@ type Item = { href: string; label: string; soon?: boolean; adminOnly?: boolean }
 const GROUPS: { label?: string; items: Item[] }[] = [
   { items: [{ href: "/", label: "Today" }] },
   { label: "Sell", items: [{ href: "/pipeline", label: "Pipeline" }, { href: "/proposals", label: "Proposals" }, { href: "/projects", label: "Projects" }] },
-  { label: "Daily work", items: [{ href: "/calendar", label: "Calendar" }, { href: "/inbox", label: "Inbox", soon: true }, { href: "/chat", label: "Team chat" }, { href: "/notes", label: "Notes" }] },
+  { label: "Daily work", items: [{ href: "/calendar", label: "Calendar" }, { href: "/inbox", label: "Inbox" }, { href: "/chat", label: "Team chat" }, { href: "/notes", label: "Notes" }] },
   { label: "Money", items: [{ href: "/expenses", label: "Expenses" }] },
   { label: "Clients", items: [{ href: "/forms", label: "Forms" }, { href: "/signatures", label: "E-signature" }] },
   { label: "Growth", items: [{ href: "/marketing", label: "Marketing", soon: true }] },
