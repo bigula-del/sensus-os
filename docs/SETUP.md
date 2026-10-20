@@ -15,7 +15,7 @@
 ## 2. Vercel (hosting)
 1. Sign up at vercel.com with **Continue with GitHub**.
 2. Add New → Project → import `sensus-os`.
-3. Environment variables (from Supabase → Project Settings → API): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+3. One environment variable (type Secret): `SUPABASE_SERVICE_ROLE_KEY` = the Supabase secret key (`sb_secret_…`). The project URL and publishable key are public and are set in `src/lib/supabase/config.ts`.
 4. Deploy. Every change saved to GitHub then goes live automatically.
 
 ## 3. Own address (optional, later)

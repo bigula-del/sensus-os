@@ -26,7 +26,12 @@ export async function addMember(_prev: unknown, fd: FormData) {
   const role = field(fd, "role") as Role | null;
   if (!email || !name || !role || !ROLES.includes(role)) return { error: "Add a name, an email and a role." };
   const password = tempPassword();
-  const admin = supabaseAdmin();
+  let admin;
+  try {
+    admin = supabaseAdmin();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Setup problem." };
+  }
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
@@ -45,7 +50,13 @@ export async function resetMemberPassword(_prev: unknown, fd: FormData) {
   const id = field(fd, "id");
   if (!id || id === user.id) return { error: "Choose a team member." };
   const password = tempPassword();
-  const { error } = await supabaseAdmin().auth.admin.updateUserById(id, { password });
+  let admin;
+  try {
+    admin = supabaseAdmin();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Setup problem." };
+  }
+  const { error } = await admin.auth.admin.updateUserById(id, { password });
   if (error) return { error: "The password could not be reset." };
   return { password };
 }

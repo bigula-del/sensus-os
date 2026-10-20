@@ -1,13 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
 
 /** Supabase client acting as the signed-in user. Row level security applies. */
 export async function supabaseServer() {
   const cookieStore = await cookies();
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
     {
       cookies: {
         getAll() {
@@ -31,9 +32,11 @@ export async function supabaseServer() {
  * (inviting users, changing roles). Never import this from client code.
  */
 export function supabaseAdmin() {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(), key.trim(), {
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
+  if (!key || key.startsWith("sb_publishable") || key.startsWith("http")) {
+    throw new Error("SETUP: In Vercel, SUPABASE_SERVICE_ROLE_KEY must hold the Supabase secret key (starts with sb_secret_).");
+  }
+  return createClient(SUPABASE_URL, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

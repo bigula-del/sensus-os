@@ -11,7 +11,10 @@ export async function signIn(_prev: unknown, fd: FormData) {
   if (!email || !password) return { error: "Enter your email and password." };
   const sb = await supabaseServer();
   const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Email or password is not right. Try again, or reset your password." };
+  if (error) {
+    if (/api key/i.test(error.message)) return { error: "Sensus OS cannot connect to the database (setup key). Tell Claude: \"Invalid API key\"." };
+    return { error: "Email or password is not right. Try again, or ask Matheus for a new password." };
+  }
   const next = field(fd, "next");
   redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 }
