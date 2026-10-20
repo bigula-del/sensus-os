@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/supabase/config";
 
 // Pages anyone can open without signing in.
-const PUBLIC_PATHS = ["/login", "/auth", "/set-password", "/p/", "/f/"];
+const PUBLIC_PATHS = ["/login", "/auth", "/set-password", "/p/", "/f/", "/sign/"];
 
 export async function proxy(request: NextRequest) {
   try {

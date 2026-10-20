@@ -106,3 +106,24 @@ set role authenticated; select set_config('request.jwt.claim.sub','00000000-0000
 select pg_temp.assert((select count(*) from storage.objects where bucket_id='receipts')=0,'client cannot see receipts');
 reset role;
 \echo ALL PROJECT TESTS PASSED
+
+-- ── e-signature ──
+insert into public.signature_requests(id, name, signer_name, signer_email, status, token, document_sha256)
+values ('70000000-0000-0000-0000-000000000001','Service agreement','Ana Ribeiro','ana@example.com','Sent','80000000-0000-0000-0000-000000000001','abc123'),
+       ('70000000-0000-0000-0000-000000000002','Draft contract','Rui','rui@example.com','Draft','80000000-0000-0000-0000-000000000002',null);
+set role anon; select set_config('request.jwt.claim.sub','',false);
+select pg_temp.assert((public.sign_open('80000000-0000-0000-0000-000000000001','1.2.3.4','test')->>'status') = 'Viewed','signer opens link: marked viewed');
+select pg_temp.assert(public.sign_open('80000000-0000-0000-0000-000000000002','1.2.3.4','test') is null,'draft cannot be opened by signer');
+select pg_temp.assert(public.sign_open(gen_random_uuid(),'1.2.3.4','test') is null,'wrong link shows nothing');
+do $$ begin perform public.sign_complete('80000000-0000-0000-0000-000000000001','Ana Ribeiro','not-an-image','1.2.3.4','test'); raise exception 'FAILED: accepted empty signature';
+exception when others then if sqlerrm like 'FAILED%' then raise; end if; raise notice 'ok  signature image required'; end $$;
+select pg_temp.assert(public.sign_complete('80000000-0000-0000-0000-000000000001','Ana Ribeiro','data:image/png;base64,AAAA','1.2.3.4','test'),'signer signs');
+select pg_temp.assert(not public.sign_complete('80000000-0000-0000-0000-000000000001','Ana Ribeiro','data:image/png;base64,AAAA','1.2.3.4','test'),'cannot sign twice');
+do $$ begin perform public.sign_file_path('80000000-0000-0000-0000-000000000001'); raise exception 'FAILED: anon read file path';
+exception when insufficient_privilege then raise notice 'ok  signer cannot read the storage path directly'; end $$;
+do $$ begin perform count(*) from public.signature_requests; raise exception 'FAILED: anon read requests';
+exception when insufficient_privilege then raise notice 'ok  anonymous visitors cannot list signature requests'; end $$;
+reset role;
+select pg_temp.assert((select jsonb_array_length(audit) from public.signature_requests where id='70000000-0000-0000-0000-000000000001') = 2,'audit trail has viewed + signed');
+select pg_temp.assert((select audit->1->>'fingerprint' from public.signature_requests where id='70000000-0000-0000-0000-000000000001') = 'abc123','audit records document fingerprint');
+\echo ALL SIGNATURE TESTS PASSED

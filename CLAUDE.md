@@ -27,8 +27,8 @@ Spec: the "Sensus OS & Companion PWA — Product Specification" doc. Clickable p
 3. **HR is admin only** (`hr_*` tables, `/people`, `/settings/team`). Non-admins get a 404.
 4. **Pro-formas and invoices have no fiscal value** and must say so. Official invoices stay in certified software.
 5. Brand: yellow `#F3EA1F`, black, white; Familjen Grotesk (display) + Instrument Sans (body). Logos in `public/brand/`.
-6. Supabase grants new tables to `anon` by default: every migration that creates a table must enable RLS and
-   `revoke all on <table> from anon`.
+6. Supabase grants new tables AND functions to `anon`/`authenticated` by default: every migration that creates a table must enable RLS and
+   `revoke all on <table> from anon`; every function not meant for visitors must `revoke all ... from public, anon` (and `authenticated` if staff-only via service role).
 
 ## Quotation rules (from Matheus) for the proposal builder
 - Per-person prices are for one person sharing a double room; single supplement shown separately.
@@ -55,4 +55,7 @@ Expenses: receipts upload from the browser to the private `receipts` bucket (shr
 ANTHROPIC_API_KEY is set in Vercel (optional ANTHROPIC_MODEL), EUR conversion at ECB rate of the expense date, approval by admin/finance.
 SQL migrations must be pasted by Matheus in Supabase SQL Editor (no DB access from the build environment).
 Calendar: /calendar month view (events + project days), reminders on Today and project pages, done/delete. No Outlook sync yet.
-Next: notes, chat, forms, e-signature, inbox (Office 365), marketing.
+Notes (/notes, autosave, private unless shared or linked to a project). Team chat (/chat, channels, project channels, DMs, 8s auto-refresh; no realtime yet).
+Forms (/forms builder with templates, public /f/[token] via public_form/submit_form). E-signature (/signatures staff, public /sign/[token]
+via sign_open/sign_complete/sign_decline, private `documents` bucket, SHA-256 fingerprint + audit trail; simple electronic signature).
+Next: Inbox (Microsoft 365 via Graph: needs Entra app registration) and Marketing (needs Meta/LinkedIn or a scheduler like Buffer).
