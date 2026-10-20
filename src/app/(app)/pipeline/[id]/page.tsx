@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { ALL_STAGES, money, shortDate } from "@/lib/format";
 import { moveLead } from "../actions";
+import { createProposal } from "../../proposals/actions";
 
 export const metadata: Metadata = { title: "Lead" };
 
@@ -22,6 +23,7 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     .eq("id", id)
     .maybeSingle<Lead>();
   if (!l) notFound();
+  const { data: proposals } = await sb.from("proposals").select("id, version, status, quote_currency, proposal_lines(sell_total_quote)").eq("lead_id", id).order("version", { ascending: false });
 
   return (
     <>
@@ -58,7 +60,19 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
             <label className="f" htmlFor="lost_reason">If lost, why?<input className="in" id="lost_reason" name="lost_reason" defaultValue={l.lost_reason ?? ""} placeholder="Price, dates, chose another DMC…" /></label>
             <div><button className="btn primary">Save stage</button></div>
           </form>
-          <p className="note" style={{ margin: 0 }}>The proposal builder, linked emails and tasks for this lead arrive in the next build steps.</p>
+        </section>
+        <section className="panel" style={{ gridColumn: "1 / -1" }}>
+          <header><h3>Proposals</h3>
+            <form action={createProposal}><input type="hidden" name="lead_id" value={l.id} />
+              <button className="btn primary sm">{proposals?.length ? "+ New proposal" : "Start proposal"}</button></form></header>
+          {proposals?.length ? proposals.map((p) => (
+            <div className="alert" key={p.id} style={{ alignItems: "center" }}>
+              <div style={{ flex: 1 }}><Link href={`/proposals/${p.id}`}><b>Version {p.version}</b></Link>
+                <div className="note">{money((p.proposal_lines as { sell_total_quote: number }[]).reduce((a, x) => a + Number(x.sell_total_quote), 0), p.quote_currency)} to the client</div></div>
+              <span className={`chip ${p.status === "Sent" ? "info" : p.status === "Approved" ? "good" : p.status === "Draft" ? "warn" : ""}`}>{p.status}</span>
+              <Link className="btn sm" href={`/proposals/${p.id}`}>Open</Link>
+            </div>
+          )) : <div className="empty">No proposal yet. Start one to build the programme and price it.</div>}
         </section>
       </div>
     </>

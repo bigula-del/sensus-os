@@ -45,5 +45,7 @@ Every migration change must keep `rls_test.sql` passing; add a test for every ne
 
 ## Build status
 Done: schema + security rules, login, team accounts created by the admin with a temporary password (no SMTP yet), change password, role-based shell, Today, Pipeline (create, view, move), Suppliers (list, add),
-People (admin, read-only), Team & access (invite, roles, block), public client proposal page.
-Next: proposal builder (multi-currency, FOC, single supplement, internal columns), then projects + expenses (AI receipt reading), calendar.
+People (admin, read-only), Team & access (invite, roles, block), public client proposal page,
+Proposals (builder with internal net/margin columns, FOC, single supplement, locked FX, US$60 meal preset, versions, send + client link, staff preview).
+Proposal maths lives in src/lib/proposals.ts; the server recalculates sell totals on save.
+Next: projects created from approved proposals + expenses (AI receipt reading) + final margin, then calendar.
