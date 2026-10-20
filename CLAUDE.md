@@ -54,4 +54,5 @@ Project finance in src/lib/projects.ts (projected while running, final when Comp
 Expenses: receipts upload from the browser to the private `receipts` bucket (shrunk on device), AI reading via Anthropic API when
 ANTHROPIC_API_KEY is set in Vercel (optional ANTHROPIC_MODEL), EUR conversion at ECB rate of the expense date, approval by admin/finance.
 SQL migrations must be pasted by Matheus in Supabase SQL Editor (no DB access from the build environment).
-Next: calendar and reminders, then notes, chat, forms, e-signature, inbox (Office 365), marketing.
+Calendar: /calendar month view (events + project days), reminders on Today and project pages, done/delete. No Outlook sync yet.
+Next: notes, chat, forms, e-signature, inbox (Office 365), marketing.

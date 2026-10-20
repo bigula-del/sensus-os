@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { money, shortDate } from "@/lib/format";
 import { PROJECT_STATUSES, projectFinance, type ServiceRow } from "@/lib/projects";
 import { setProjectStatus } from "../actions";
+import { setDone } from "../../calendar/actions";
 import { PaymentForm } from "./payment-form";
 
 export const metadata: Metadata = { title: "Project" };
@@ -22,6 +23,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     sb.from("expenses").select("id, spent_on, supplier_name, description, amount, currency, amount_eur, category, service_id, status, receipt_path").eq("project_id", id).order("spent_on", { ascending: false }).returns<Exp[]>(),
     sb.from("client_payments").select("id, received_on, amount_eur, reference").eq("project_id", id).order("received_on"),
   ]);
+  const { data: evs } = await sb.from("events").select("id, starts_on, starts_at, title, kind, done").eq("project_id", id).order("starts_on").order("starts_at", { nullsFirst: true });
   const services: ServiceRow[] = (svcs ?? []).map((s) => ({ id: s.id, service: s.service, sell_eur: Number(s.sell_eur), net_eur: Number(s.project_service_costs?.net_eur ?? 0), supplier: s.project_service_costs?.suppliers?.name ?? null }));
   const expenses = exps ?? [];
   const received = (pays ?? []).reduce((a, x) => a + Number(x.amount_eur), 0);
@@ -107,6 +109,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <PaymentForm projectId={p.id} balance={Math.max(0, f.sell - received)} />
         </section>
       </div>
+
+      <section className="panel" style={{ marginTop: 16 }}>
+        <header><h3>Schedule and reminders</h3><Link className="btn sm" href={`/calendar?add=1&project=${p.id}&date=${p.start_date ?? ""}&m=${(p.start_date ?? new Date().toISOString()).slice(0, 7)}`}>+ Add</Link></header>
+        {evs?.length ? (
+          <ul className="agenda">
+            {evs.map((e) => (
+              <li key={e.id} style={e.done ? { opacity: 0.55 } : undefined}>
+                <span className="tm">{shortDate(e.starts_on)}<div className="note">{e.starts_at ? e.starts_at.slice(0, 5) : "All day"}</div></span>
+                <span>{e.title} <span className={`chip ${e.kind === "meeting" ? "info" : e.kind === "reminder" ? "warn" : ""}`}>{e.kind}</span></span>
+                <form action={setDone}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="done" value={e.done ? "false" : "true"} /><button className="btn sm">{e.done ? "Undo" : "Done"}</button></form>
+              </li>
+            ))}
+          </ul>
+        ) : <div className="empty">No events yet. Add the run-of-show: arrivals, transfers, dinners, deadlines.</div>}
+      </section>
 
       <section className="panel pad" style={{ marginTop: 16 }}>
         <form action={setProjectStatus} className="row">
